@@ -1,54 +1,61 @@
-.include "memory_map.inc"
+;====
+; SMSLib Hello World example
+;====
+.sdsctag 1.10, "smslib Hello World", "smslib Hello World example based on Maxim's tutorial", "lajohnston"
 
-.smstag				; automatically adds the TMR SEGA header so real consoles recognize it
+;====
+; Import smslib
+;====
+.incdir "lib/smslib"            ; point to smslib directory
+.include "smslib.asm"
+.incdir "."                 ; point back to current working directory
 
-.define RAM_TOP         = $dff8
-.define MEM_CTL_PORT    = $3e
-.define IO_CTL_PORT     = $3f
-.define JS_PORT_A       = $dc
-.define JS_PORT_B       = $dd
-.define VDP_CMD   	= $bf
-.define VDP_DATA  	= $be
+;====
+; Define asset data
+;====
 
-.ramsection "port_3e_status" slot "RAM_SLOT" org 0 force
-        port_3e_status  db	; set by BIOS on cartridge boot
+; Map ASCII data to byte values so we can use .asc later (see wla-dx docs)
+.asciitable
+    map " " to "~" = 0
+.enda
+
+.section "assets" free
+    paletteData:
+        palette.rgb 0, 0, 0         ; black
+        palette.rgb 255, 255, 255   ; white
+
+    fontData:
+        ; font.bin contains uncompressed graphics representing the letters of the
+        ; alphabet. Here we include it and set fontDataSize to its total size
+        .incbin "lib/smslib/examples/assets/font.bin" fsize fontDataSize
+
+    message:
+        .asc "Hello, world!"
+        .db $ff                     ; terminator byte
 .ends
 
-.ramsection "pause_vars" slot "RAM_SLOT"
-        paused    	db
+;====
+; Initialise program
+;
+; SMSLib will jump to 'init' label after initialising the system
+;====
+.section "init" free
+    init:
+        ; Load palette
+        palette.setIndex 0                  ; point to first color index
+        palette.writeSlice paletteData, 2   ; write 2 colors from paletteData
+
+        ; Load font tiles
+        patterns.setIndex 0                         ; point to first pattern index
+        patterns.writeBytes fontData, fontDataSize  ; write uncompressed font data into pattern VRAM
+
+        ; Display font tiles on screen
+        tilemap.setColRow 0, 0              ; set tilemap index x0, y0 (top left)
+        tilemap.writeBytesUntil $ff message ; write data from 'message' until reaching terminator ($ff) byte
+
+        ; Enable the display
+        vdp.enableDisplay
+
+        ; End program with infinite loop
+        -: jr -
 .ends
-
-.ramsection "user_vars" slot "RAM_SLOT"
-	; put your user variables here
-.ends
-
-.orga 0
-
-di
-im 1
-ld sp, RAM_TOP
-jp init
-
-.orga $0038
-	in a, (VDP_CMD)
-	reti
-
-.orga $0066
-	ld a, (paused)
-	xor 1
-	ld (paused), a
-	retn
-
-init:
-	xor a
-	ld (paused), a
-	; do some initialization here
-@loop:
-	ei
-	halt			; wait for interrupt
-	; check pause status and do nothing if set
-	ld a, (paused)
-	or a
-	jr nz, @loop
-	; do some game logic here
-	jr @loop

@@ -1,13 +1,18 @@
-# A very, very, very simple WLA-DX template for an SMS game
+# A very, very, very simple WLA-DX template for an SMS game based on library at https://github.com/lajohnston/smslib
+
+## Quickstart
+
+1. Either create a new repo using this one as a template from the github UI, use the `gh repo create` command line, or just clone this repo and manually rename / change git remotes etc.
+2. Run `git submodule init`
+3. Run `git submodule update`
+
+The last two commands will populate the lib/smslib folder with the library.
+Alternatively when you clone you could use the `--recurse-submodules` flag.
 
 ## Features
 
 - Basic Makefile to build the project
-- A simple, unpaged memory map setup, via include file
-- Some basic defines
-- Example RAMSECTIONs for system variables, pause support and user variables
-- Example main program structure which waits for a frame interrupt and loops
-- SMS TMR header generation
+- Example Hello World program from smslib's examples folder
 
 ## WLA-DX features non demonstrated
 
